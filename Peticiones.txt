@@ -1,0 +1,37 @@
+POST:
+Ruta en Postman: http://localhost:3000/peliculas
+
+{
+  "titulo": "Interstellar",
+  "director": "Christopher Nolan",
+  "genero": "Ciencia Ficción",
+  "anio_estreno": 2014,
+  "duracion_min": 169,
+  "calificacion": 8.6,
+  "sinopsis": "Un equipo de exploradores viaja a través de un agujero de gusano para salvar a la humanidad."
+}
+
+GET:
+Ruta en Postman (Todas): http://localhost:3000/peliculas | para una sola se le coloca el #id - http://localhost:3000/peliculas/id
+
+PUT
+
+{
+  "titulo": "Interstellar - Edición Extendida",
+  "director": "Christopher Nolan",
+  "genero": "Ciencia Ficción",
+  "anio_estreno": 2014,
+  "duracion_min": 175,
+  "calificacion": 9.0,
+  "sinopsis": "Un equipo de exploradores viaja a través de un agujero de gusano. Versión con escenas adicionales."
+}
+
+PATCH
+
+{
+  "calificacion": 9.5,
+  "duracion_min": 180
+}
+
+DELETE
+Ruta en Postman: http://localhost:3000/peliculas/id

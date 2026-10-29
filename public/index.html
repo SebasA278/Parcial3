@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#11131b">
+  <title>Studio API | Cinema</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Studio API, inicio">
+        <span class="brand-mark">C</span>
+        <span><strong>STUDIO API</strong><small>CINEMA COLLECTION</small></span>
+      </a>
+      <span class="environment"><i></i> API local · puerto 3000</span>
+    </header>
+
+    <section class="intro">
+      <span class="eyebrow">API WORKSPACE / PELÍCULAS</span>
+      <h1>Tu colección de películas,<br><em>bajo control.</em></h1>
+      <p>Selecciona un método y una dirección para consultar tu API.</p>
+    </section>
+
+    <section class="request-card" aria-label="Constructor de petición">
+      <div class="card-label"><span>01</span> NUEVA PETICIÓN</div>
+      <form id="requestForm">
+        <div class="request-row">
+          <label class="sr-only" for="method">Método HTTP</label>
+          <select id="method" name="method">
+            <option>GET</option>
+            <option>POST</option>
+            <option>PUT</option>
+            <option>PATCH</option>
+            <option>DELETE</option>
+          </select>
+          <label class="sr-only" for="url">URL de la petición</label>
+          <input id="url" name="url" type="text" value="/peliculas" autocomplete="url" spellcheck="false" required>
+          <button id="send" type="submit"><span>Enviar</span><b aria-hidden="true">↗</b></button>
+        </div>
+        <div id="bodySection" class="body-section" hidden>
+          <label for="body">CUERPO JSON <span>Requerido para crear o actualizar</span></label>
+          <textarea id="body" name="body" rows="8" spellcheck="false"></textarea>
+        </div>
+      </form>
+      <div class="endpoint-hint"><i></i> Usa <code>http://localhost:3000</code> para abrir esta consola</div>
+    </section>
+
+    <section class="response-card" aria-live="polite">
+      <div class="response-head">
+        <div class="card-label"><span>02</span> RESPUESTA</div>
+        <div id="responseMeta" class="response-meta" hidden>
+          <span id="status" class="status"></span>
+          <span id="duration"></span>
+        </div>
+      </div>
+      <div id="responseEmpty" class="response-empty">
+        <span class="response-symbol">↳</span>
+        <p>La respuesta de la API aparecerá aquí.</p>
+      </div>
+      <pre id="response" class="response-body" hidden></pre>
+    </section>
+
+    <footer><span>STUDIO API</span><span>REST · PELÍCULAS · V1.0</span></footer>
+  </main>
+
+  <script>
+    (() => {
+      const form = document.querySelector("#requestForm");
+      const methodInput = document.querySelector("#method");
+      const urlInput = document.querySelector("#url");
+      const bodySection = document.querySelector("#bodySection");
+      const bodyInput = document.querySelector("#body");
+      const sendButton = document.querySelector("#send");
+      const responseOutput = document.querySelector("#response");
+      const responseEmpty = document.querySelector("#responseEmpty");
+      const responseMeta = document.querySelector("#responseMeta");
+      const statusOutput = document.querySelector("#status");
+
+      const sampleBodies = {
+        POST: JSON.stringify({
+          titulo: "Interstellar",
+          director: "Christopher Nolan",
+          genero: "Ciencia Ficción",
+          anio_estreno: 2014,
+          duracion_min: 169,
+          calificacion: 8.6,
+          sinopsis: "Un equipo de exploradores viaja a través de un agujero de gusano."
+        }, null, 2),
+        PUT: JSON.stringify({
+          titulo: "Interstellar — Edición Extendida",
+          director: "Christopher Nolan",
+          genero: "Ciencia Ficción",
+          anio_estreno: 2014,
+          duracion_min: 175,
+          calificacion: 9.0,
+          sinopsis: "Versión con escenas adicionales."
+        }, null, 2),
+        PATCH: JSON.stringify({ calificacion: 9.5, duracion_min: 180 }, null, 2)
+      };
+
+      function updateMethod() {
+        const method = methodInput.value;
+        const needsBody = Object.hasOwn(sampleBodies, method);
+        bodySection.hidden = !needsBody;
+        methodInput.dataset.method = method.toLowerCase();
+        if (needsBody && !bodyInput.value.trim()) bodyInput.value = sampleBodies[method];
+        if (!needsBody) bodyInput.value = "";
+      }
+
+      function displayResponse(message, status, duration, isError) {
+        responseEmpty.hidden = true;
+        responseOutput.hidden = false;
+        responseOutput.textContent = message;
+        responseMeta.hidden = false;
+        statusOutput.textContent = status;
+        statusOutput.classList.toggle("error", isError);
+        document.querySelector("#duration").textContent = duration;
+      }
+
+      methodInput.addEventListener("change", updateMethod);
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        if (window.location.protocol === "file:") {
+          displayResponse(
+            "Abre la interfaz desde http://localhost:3000 (no desde el archivo index.html). Inicia la API con npm start y vuelve a cargar esa dirección.",
+            "ORIGEN INCORRECTO",
+            "",
+            true
+          );
+          return;
+        }
+
+        let target;
+        try {
+          target = new URL(urlInput.value.trim(), window.location.origin);
+        } catch {
+          displayResponse("Escribe una URL válida, por ejemplo /peliculas o /peliculas/1.", "URL INVÁLIDA", "", true);
+          return;
+        }
+        if (!["http:", "https:"].includes(target.protocol)) {
+          displayResponse("La URL debe comenzar con http:// o https://.", "URL INVÁLIDA", "", true);
+          return;
+        }
+
+        const method = methodInput.value;
+        const options = { method, headers: { Accept: "application/json" } };
+        if (Object.hasOwn(sampleBodies, method)) {
+          try {
+            JSON.parse(bodyInput.value);
+          } catch {
+            displayResponse("El cuerpo de la petición no es JSON válido.", "JSON INVÁLIDO", "", true);
+            bodyInput.focus();
+            return;
+          }
+          options.headers["Content-Type"] = "application/json";
+          options.body = bodyInput.value;
+        }
+
+        sendButton.disabled = true;
+        sendButton.querySelector("span").textContent = "Enviando";
+        const startedAt = performance.now();
+        try {
+          const apiResponse = await fetch(target.href, options);
+          const responseText = await apiResponse.text();
+          let formattedResponse = responseText || "(respuesta vacía)";
+          try {
+            formattedResponse = JSON.stringify(JSON.parse(responseText), null, 2);
+          } catch {
+            // Conserva como texto las respuestas que no sean JSON.
+          }
+          displayResponse(
+            formattedResponse,
+            `${apiResponse.status} ${apiResponse.statusText}`.trim(),
+            `${Math.round(performance.now() - startedAt)} ms`,
+            !apiResponse.ok
+          );
+        } catch (error) {
+          const message = error.name === "AbortError"
+            ? "La petición fue cancelada."
+            : `No se pudo conectar con ${target.origin}.\n\nComprueba que la API esté activa con npm start y abre la consola desde http://localhost:3000. No abras index.html directamente: el navegador bloquea esas peticiones por el origen file://.\n\nDetalle: ${error.message || "Error de red"}`;
+          displayResponse(message, "ERROR DE CONEXIÓN", "", true);
+        } finally {
+          sendButton.disabled = false;
+          sendButton.querySelector("span").textContent = "Enviar";
+        }
+      });
+
+      updateMethod();
+    })();
+  </script>
+</body>
+
+</html>
